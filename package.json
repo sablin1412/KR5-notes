@@ -1,0 +1,17 @@
+{
+  "name": "notes-express-app",
+  "version": "1.0.0",
+  "description": "Контрольная работа №5. Вариант 1: Список заметок",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

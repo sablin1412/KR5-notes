@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Список заметок</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    input, textarea, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .note {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .note-title {
+      font-weight: bold;
+    }
+    .note-actions {
+      margin-top: 10px;
+    }
+    .note-actions button {
+      width: auto;
+      display: inline-block;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Список заметок</h1>
+
+  <form id="note-form">
+    <h2>Создать / обновить заметку</h2>
+    <input type="hidden" id="note-id" />
+    <label>
+      Заголовок:
+      <input type="text" id="note-title-input" required />
+    </label>
+    <label>
+      Текст:
+      <textarea id="note-content-input" rows="4" required></textarea>
+    </label>
+    <button type="submit">Сохранить</button>
+  </form>
+
+  <div>
+    <h2>Поиск по заголовку</h2>
+    <input type="text" id="search-input" placeholder="Введите часть заголовка..." />
+    <button id="search-btn">Искать</button>
+    <button id="reset-btn">Сброс</button>
+  </div>
+
+  <h2>Все заметки</h2>
+  <div id="notes-container"></div>
+
+  <script>
+    const notesContainer = document.getElementById('notes-container');
+    const noteForm = document.getElementById('note-form');
+    const noteIdInput = document.getElementById('note-id');
+    const noteTitleInput = document.getElementById('note-title-input');
+    const noteContentInput = document.getElementById('note-content-input');
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const API_URL = '/api/notes';
+
+    async function fetchNotes(query = '') {
+      let url = API_URL;
+      if (query) {
+        url += '?title=' + encodeURIComponent(query);
+      }
+
+      const res = await fetch(url);
+      const data = await res.json();
+      renderNotes(data);
+    }
+
+    function renderNotes(notes) {
+      notesContainer.innerHTML = '';
+      if (!notes.length) {
+        notesContainer.innerHTML = '<p>Заметок нет</p>';
+        return;
+      }
+
+      notes.forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'note';
+
+        div.innerHTML = `
+          <div class="note-title">${note.title}</div>
+          <div class="note-content">${note.content}</div>
+          <div class="note-actions">
+            <button data-id="${note.id}" class="edit-btn">Редактировать</button>
+            <button data-id="${note.id}" class="delete-btn">Удалить</button>
+          </div>
+        `;
+
+        notesContainer.appendChild(div);
+      });
+
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.dataset.id;
+          const res = await fetch(`${API_URL}/${id}`);
+          const note = await res.json();
+
+          noteIdInput.value = note.id;
+          noteTitleInput.value = note.title;
+          noteContentInput.value = note.content;
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.dataset.id;
+          if (!confirm('Удалить заметку?')) return;
+
+          await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+          });
+
+          fetchNotes(searchInput.value.trim());
+        });
+      });
+    }
+
+    noteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = noteIdInput.value;
+      const title = noteTitleInput.value.trim();
+      const content = noteContentInput.value.trim();
+
+      if (!title || !content) {
+        alert('Заполните заголовок и текст');
+        return;
+      }
+
+      if (id) {
+        await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content })
+        });
+      } else {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content })
+        });
+      }
+
+      noteIdInput.value = '';
+      noteTitleInput.value = '';
+      noteContentInput.value = '';
+
+      fetchNotes(searchInput.value.trim());
+    });
+
+    searchBtn.addEventListener('click', () => {
+      const query = searchInput.value.trim();
+      fetchNotes(query);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      fetchNotes();
+    });
+
+    fetchNotes();
+  </script>
+</body>
+</html>
