@@ -3,9 +3,9 @@ const path = require('path');
 const notesRouter = require('./routes/notes');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Собственный middleware: простой логгер запросов
+// Собственный middleware: логгер запросов
 app.use((req, res, next) => {
   const now = new Date().toISOString();
   console.log(`[${now}] ${req.method} ${req.url}`);
@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Роуты для API заметок
 app.use('/api/notes', notesRouter);
 
-// Корневой маршрут - отдаем HTML
+// Корневой маршрут: отдаем public/index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -33,5 +33,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
